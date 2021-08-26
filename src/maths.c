@@ -1,4 +1,4 @@
-#include "public/maths.h"
+#include "maths.h"
 #include <math.h> // sqrt, sin, cos, tan
 
 //-----------------------------
@@ -751,7 +751,7 @@ m4 m4ScaleY(m4 m, float y)
     return out;
 }
 
-m4 m4ScaleX(m4 m, float z)
+m4 m4ScaleZ(m4 m, float z)
 {
     m4 out = m;
     out.m20 *= z;

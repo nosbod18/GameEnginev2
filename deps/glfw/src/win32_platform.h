@@ -330,6 +330,7 @@ typedef struct _GLFWlibraryWin32
 {
     HWND                helperWindowHandle;
     HDEVNOTIFY          deviceNotificationHandle;
+    DWORD               foregroundLockTimeout;
     int                 acquiredMonitorCount;
     char*               clipboardString;
     short int           keycodes[512];

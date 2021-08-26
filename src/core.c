@@ -1,4 +1,4 @@
-#include "public/core.h"
+#include "core.h"
 #include "GLFW/glfw3.h"
 #include <stdlib.h> // malloc, free
 #include <string.h> // memcpy
@@ -217,10 +217,18 @@ void windowMouseScroll(const Window* window, float* x, float* y)
 
 void windowShowCursor(Window* window)
 {
+    if (!window)
+        return;
+
+    window->mouse.hidden = 0;
 }
 
 void windowHideCursor(Window* window)
 {
+    if (!window)
+        return;
+
+    window->mouse.hidden = 1;
 }
 
 bool windowIsCursorHidden(const Window* window)
@@ -230,15 +238,23 @@ bool windowIsCursorHidden(const Window* window)
 
 void windowEnableCursor(Window* window)
 {
+    if (!window)
+        return;
+
+    window->mouse.disabled = 0;
 }
 
 void windowDisableCursor(Window* window)
 {
+    if (!window)
+        return;
+
+    window->mouse.disabled = 1;
 }
 
 bool windowIsCursorDisabled(const Window* window)
 {
-    return window ? window->mouse.trapped : 0;
+    return window ? window->mouse.disabled : 0;
 }
 
 static void windowRefreshInput(Window* window)
@@ -261,8 +277,26 @@ static void windowRefreshInput(Window* window)
     window->mouse.scrollY = 0.0f;
 }
 
+static InputButton windowGetKey(const Window* window, KeyCode key)
+{
+    if (!window || key < KEY_UNKNOWN || key > KEY_LAST)
+        return (InputButton){0};
+
+    return window->keyboard.keys[key];
+}
+
+static InputButton windowGetButton(const Window* window, MouseCode button)
+{
+    if (!window || button < 0 || button > MOUSE_BUTTON_LAST)
+        return (InputButton){0};
+
+    return window->mouse.buttons[button];
+}
+
 static void windowOnKey(GLFWwindow* native, int key, int scancode, int action, int mods)
 {
+    (void)scancode; (void)mods;
+
     Window* window = glfwGetWindowUserPointer(native);
 
     if (!window)
@@ -291,6 +325,8 @@ static void windowOnKey(GLFWwindow* native, int key, int scancode, int action, i
 
 static void windowOnButton(GLFWwindow* native, int button, int action, int mods)
 {
+    (void)mods;
+
     Window* window = glfwGetWindowUserPointer(native);
 
     if (!window)
