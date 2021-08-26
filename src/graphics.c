@@ -6,19 +6,24 @@
 #include <stdio.h>  // FILE, fprintf, stderr
 #include <stdlib.h> // malloc, calloc, free
 
-#define glCheck(x_) glClearError(); x_; if (!glLogCall(__FILE__, __func__, __LINE__)) exit(1)
+#ifndef FILENAME
+    #include <string.h>
+    #define FILENAME (strrchr("/" __FILE__, '/') + 1)
+#endif // FILENAME
+
+#define glCheck(x_) glClearError(); x_; if (!glCheckError(FILENAME, __func__, __LINE__)) exit(-1)
 
 static inline void glClearError()
 {
 	while (glGetError() != GL_NO_ERROR) {}
 }
 
-static inline int glLogCall(const char* file, const char* func, int line)
+static inline int glCheckError(const char* file, const char* func, int line)
 {
     GLenum error = glGetError();
 	if (error)
 	{
-		fprintf(stderr, "[%10s:%3d] [ERROR] [OPENGL] %s(): %x\n", file, line, func, error);
+		fprintf(stderr, "[%10s:%3d] [ERROR] [OPENGL] %s(): 0x%x\n", file, line, func, error);
 		return 0;
 	}
     return 1;
@@ -27,12 +32,11 @@ static inline int glLogCall(const char* file, const char* func, int line)
 //-----------------------------
 // ~VBO
 
-static uint dataTypeToGLType(DataType type);
-static uint dataTypeSize(DataType type);
+static int glTypeSize(int type);
 
-VBO vboCreate(const void* data, uint size, DrawMode mode, uint stride)
+VBO vboCreate(const void* data, uint size, uint stride, DrawMode mode)
 {
-    VBO vbo;
+    VBO vbo = {0};
     glCheck(glGenBuffers(1, &vbo.id));
     glCheck(glBindBuffer(GL_ARRAY_BUFFER, vbo.id));
     glCheck(glBufferData(GL_ARRAY_BUFFER, size, data, mode));
@@ -45,24 +49,33 @@ void vboDestroy(VBO vbo)
     glCheck(glDeleteBuffers(1, &vbo.id));
 }
 
-void vboPushLayout(VBO vbo, const char* name, uint type, bool normalized)
+void vboBind(VBO vbo)
 {
-    (void)name;
+    glCheck(glBindBuffer(GL_ARRAY_BUFFER, vbo.id));
+}
 
+void vboUnbind(VBO vbo)
+{
+    (void)vbo;
+    glCheck(glBindBuffer(GL_ARRAY_BUFFER, 0));
+}
+
+void vboPushAttribute(VBO vbo, int type, int count, bool normalized)
+{
     vboBind(vbo);
 
     glCheck(glEnableVertexAttribArray(vbo.layout.index));
     glCheck(glVertexAttribPointer(
         vbo.layout.index,
-        dataTypeSize(type),
-        dataTypeToGLType(type),
+        count,
+        type,
         normalized,
         vbo.layout.stride,
         (const void*)&vbo.layout.offset
     ));
 
     vbo.layout.index++;
-    vbo.layout.offset += dataTypeSize(type);
+    vbo.layout.offset += glTypeSize(type);
 }
 
 void vboSubmitData(VBO vbo, const void* data, uint size, uint offset)
@@ -73,44 +86,19 @@ void vboSubmitData(VBO vbo, const void* data, uint size, uint offset)
 
 //- - - - - - - - - - - - - - -
 
-static uint dataTypeToGLType(DataType type)
+static int glTypeSize(int type)
 {
     switch (type)
     {
-        case DATA_TYPE_BYTE:    return GL_BYTE;
-        case DATA_TYPE_UBYTE:   return GL_UNSIGNED_BYTE;
-        case DATA_TYPE_INT:     return GL_INT;
-        case DATA_TYPE_INT2:    return GL_INT;
-        case DATA_TYPE_INT3:    return GL_INT;
-        case DATA_TYPE_INT4:    return GL_INT;
-        case DATA_TYPE_UINT:    return GL_UNSIGNED_INT;
-        case DATA_TYPE_FLOAT:   return GL_FLOAT;
-        case DATA_TYPE_FLOAT2:  return GL_FLOAT;
-        case DATA_TYPE_FLOAT3:  return GL_FLOAT;
-        case DATA_TYPE_FLOAT4:  return GL_FLOAT;
-    };
-
-    return 0;
-}
-
-static uint dataTypeSize(DataType type)
-{
-    switch (type)
-    {
-        case DATA_TYPE_BYTE:   return 1;
-        case DATA_TYPE_UBYTE:  return 1;
-        case DATA_TYPE_INT:    return 4;
-        case DATA_TYPE_UINT:   return 4;
-        case DATA_TYPE_FLOAT:  return 4;
-        case DATA_TYPE_FLOAT2: return 8;
-        case DATA_TYPE_INT2:   return 8;
-        case DATA_TYPE_FLOAT3: return 12;
-        case DATA_TYPE_INT3:   return 12;
-        case DATA_TYPE_FLOAT4: return 16;
-        case DATA_TYPE_INT4:   return 16;
-    };
-
-    return 0;
+        case GL_BYTE:              return 1;
+        case GL_UNSIGNED_BYTE:     return 1;
+        case GL_SHORT:             return 2;
+        case GL_UNSIGNED_SHORT:    return 2;
+        case GL_INT:               return 4;
+        case GL_UNSIGNED_INT:      return 4;
+        case GL_FLOAT:             return 4;
+        default:                   return 0;
+    }
 }
 
 //-----------------------------
@@ -155,7 +143,10 @@ VAO* vaoCreate(void)
     VAO* vao = malloc(sizeof *vao);
 
     if (vao)
+    {
         glCheck(glGenVertexArrays(1, &vao->id));
+        glCheck(glBindVertexArray(vao->id));
+    }
 
     return vao;
 }
@@ -181,15 +172,24 @@ void vaoBind(VAO* vao)
         return;
 
     glCheck(glBindVertexArray(vao->id));
+
+    for (uint i = 0; i < vao->vboCount; ++i)
+        vboBind(vao->vbos[i]);
+
+    // iboBind(vao->ibo);
 }
 
 void vaoUnbind(VAO* vao)
 {
-    (void)vao;
     glCheck(glBindVertexArray(0));
+
+    for (uint i = 0; i < vao->vboCount; ++i)
+        vboUnbind(vao->vbos[i]);
+
+    iboUnbind(vao->ibo);
 }
 
-void vaoAttachVbo(VAO* vao, VBO vbo)
+void vaoPushVbo(VAO* vao, VBO vbo)
 {
     if (!vao || vao->vboCount == MAX_VAO_VBOS)
         return;
@@ -213,10 +213,23 @@ static uint  shaderCompile(const char* srcPath, uint type);
 
 Shader shaderCreate(const char* vertPath, const char* fragPath)
 {
+    char* vertSrc = shaderParse(vertPath);
+    char* fragSrc = shaderParse(fragPath);
+
+    Shader shader = shaderCreateFromSrc(vertSrc, fragSrc);
+
+    free(vertSrc);
+    free(fragSrc);
+
+    return shader;
+}
+
+Shader shaderCreateFromSrc(const char* vertSrc, const char* fragSrc)
+{
     Shader shader;
     glCheck(shader.id = glCreateProgram());
-    uint vs = shaderCompile(vertPath, GL_VERTEX_SHADER);
-    uint fs = shaderCompile(fragPath, GL_FRAGMENT_SHADER);
+    uint vs = shaderCompile(vertSrc, GL_VERTEX_SHADER);
+    uint fs = shaderCompile(fragSrc, GL_FRAGMENT_SHADER);
 
 	glCheck(glAttachShader(shader.id, vs));
 	glCheck(glAttachShader(shader.id, fs));
@@ -322,7 +335,10 @@ static char* shaderParse(const char* srcPath)
     char* src = malloc(length * sizeof *src);
 
     if (!src)
+    {
+        fclose(fp);
         return NULL;
+    }
 
     fread(src, sizeof(char), length, fp);
     src[length] = '\0';
@@ -331,10 +347,8 @@ static char* shaderParse(const char* srcPath)
     return src;
 }
 
-static uint shaderCompile(const char* srcPath, uint type)
+static uint shaderCompile(const char* src, uint type)
 {
-    char* src = shaderParse(srcPath);
-
     glCheck(unsigned int id = glCreateShader(type));
     glCheck(glShaderSource(id, 1, (const GLchar* const *)&src, NULL));
     glCheck(glCompileShader(id));
@@ -346,18 +360,17 @@ static uint shaderCompile(const char* srcPath, uint type)
     if (compiled == GL_FALSE)
     {
         char message[512];
-        glCheck(glGetShaderInfoLog(id, 512, NULL, message));
+        glCheck(glGetShaderInfoLog(id, sizeof message, NULL, message));
 
-        fprintf(stderr, "[%10s:%3d] [ERROR] [OPENGL] %s(): ", __FILE__, __LINE__, __func__);
-        fprintf(stderr, "Failed to compile %s shader at %s!\n",
-            type == GL_VERTEX_SHADER ? "vertex" : "fragment", srcPath);
+        fprintf(stderr, "[%10s:%3d] [ERROR] [OPENGL] %s(): ", FILENAME, __LINE__, __func__);
+        fprintf(stderr, "Failed to compile %s shader!\n",
+            type == GL_VERTEX_SHADER ? "vertex" : "fragment");
         fprintf(stderr, "%s\n", message);
 
         glCheck(glDeleteShader(id));
         return 0;
     }
 
-    free(src);
     return id;
 }
 

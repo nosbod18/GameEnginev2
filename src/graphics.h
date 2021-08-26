@@ -103,10 +103,8 @@ typedef struct VAO
 {
     VBO vbos[MAX_VAO_VBOS];
     uint vboCount;
-    uint vboIndex;
 
     IBO ibo;
-
     uint id;
 } VAO;
 
@@ -139,7 +137,6 @@ typedef struct Vertex
 {
     v3 pos;
     v2 texcoord;
-    c4 color;
 } Vertex;
 
 typedef struct Mesh
@@ -157,22 +154,7 @@ typedef struct Mesh
 
 
 //-----------------------------
-// ~Enums
-
-typedef enum DataType
-{
-    DATA_TYPE_BYTE = 0,
-    DATA_TYPE_UBYTE,
-    DATA_TYPE_INT,
-    DATA_TYPE_INT2,
-    DATA_TYPE_INT3,
-    DATA_TYPE_INT4,
-    DATA_TYPE_UINT,
-    DATA_TYPE_FLOAT,
-    DATA_TYPE_FLOAT2,
-    DATA_TYPE_FLOAT3,
-    DATA_TYPE_FLOAT4,
-} DataType;
+// ~Enums and other defines
 
 typedef enum DrawMode
 {
@@ -188,13 +170,13 @@ typedef enum DrawMode
 //-----------------------------
 // ~VBO
 
-VBO         vboCreate(const void* data, uint size, DrawMode mode, uint stride);
+VBO         vboCreate(const void* data, uint size, uint stride, DrawMode mode);
 void        vboDestroy(VBO vbo);
 
 void        vboBind(VBO vbo);
 void        vboUnbind(VBO vbo);
 
-void        vboPushLayout(VBO vbo, const char* name, uint type, bool normalized);
+void        vboPushAttribute(VBO vbo, int type, int count, bool normalized);
 void        vboSubmitData(VBO vbo, const void* data, uint size, uint offset);
 
 //-----------------------------
@@ -217,13 +199,14 @@ void        vaoDestroy(VAO* vao);
 void        vaoBind(VAO* vao);
 void        vaoUnbind(VAO* vao);
 
-void        vaoAttachVbo(VAO* vao, VBO vbo);
+void        vaoPushVbo(VAO* vao, VBO vbo);
 void        vaoSetIbo(VAO* vao, IBO ibo);
 
 //-----------------------------
 // ~Shader
 
 Shader      shaderCreate(const char* vertPath, const char* fragPath);
+Shader      shaderCreateFromSrc(const char* vertSrc, const char* fragSrc);
 void        shaderDestroy(Shader shader);
 
 void        shaderBind(Shader shader);

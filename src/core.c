@@ -1,7 +1,16 @@
 #include "core.h"
+
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
+
 #include <stdlib.h> // malloc, free
 #include <string.h> // memcpy
+#include <stdio.h>
+
+#ifndef FILENAME
+    #include <string.h>
+    #define FILENAME (strrchr("/" __FILE__, '/') + 1)
+#endif // FILENAME
 
 //-----------------------------
 // ~Window
@@ -13,28 +22,25 @@ static void windowOnMouseScroll(GLFWwindow* window, double x, double y);
 
 Window* windowCreate(const char* title, int w, int h, uint flags)
 {
+    if (!glfwInit())
+        return NULL;
+
     Window* window = malloc(sizeof *window);
 
     if (!window)
         return NULL;
 
-    glfwWindowHint(GLFW_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif // __APPLE__
 
-    GLFWwindow* native = NULL;
-    if ((flags >> WINFLAG_MAXIMIZED) & 1)
-        native = glfwCreateWindow(w, h, title, glfwGetPrimaryMonitor(), NULL);
-    else
-        native = glfwCreateWindow(w, h, title, NULL, NULL);
+    GLFWwindow* native = glfwCreateWindow(w, h, title, NULL, NULL);
 
-    int x0, y0;
-    glfwGetWindowPos(native, &x0, &y0);
-    Window tmp = {native, title, x0, y0, w, h, x0, y0, w, h, flags, {0}, {0}};
-    memcpy(window, &tmp, sizeof *window);
+    if (!native)
+        return NULL;
 
     glfwSetWindowUserPointer(native, window);
     glfwSetKeyCallback(native, windowOnKey);
@@ -42,14 +48,27 @@ Window* windowCreate(const char* title, int w, int h, uint flags)
     glfwSetCursorPosCallback(native, windowOnMouseMove);
     glfwSetScrollCallback(native, windowOnMouseScroll);
 
+    int x0, y0;
+    glfwGetWindowPos(native, &x0, &y0);
+
+    Window tmp = {native, title, x0, y0, w, h, x0, y0, w, h, flags, {0}, {0}};
+    memcpy(window, &tmp, sizeof *window);
+
+    glfwMakeContextCurrent(native);
+    gladLoadGL();
+
     return window;
 }
 
 void windowDestroy(Window* window)
 {
     glfwDestroyWindow((GLFWwindow*)window->native);
+
     free(window);
     window = NULL;
+
+    // Only supports one window for now
+    glfwTerminate();
 }
 
 void windowSwapBuffers(const Window* window)
@@ -69,7 +88,7 @@ int windowHeight(const Window* window)
 
 bool windowIsOpen(const Window* window)
 {
-    return !glfwWindowShouldClose((GLFWwindow*)window->native);
+    return window ? !glfwWindowShouldClose((GLFWwindow*)window->native) : 0;
 }
 
 bool windowIsVsync(const Window* window)
