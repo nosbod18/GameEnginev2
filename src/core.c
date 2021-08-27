@@ -93,17 +93,17 @@ bool windowIsOpen(const Window* window)
 
 bool windowIsVsync(const Window* window)
 {
-    return window ? (window->flags >> WINFLAG_VSYNC) & 1 : 0;
+    return window ? (window->flags >> WINDOW_VSYNC) & 1 : 0;
 }
 
 bool windowIsMinimized(const Window* window)
 {
-    return window ? (window->flags >> WINFLAG_MINIMIZED) & 1 : 0;
+    return window ? (window->flags >> WINDOW_MINIMIZED) & 1 : 0;
 }
 
 bool windowIsMaximized(const Window* window)
 {
-    return window ? (window->flags >> WINFLAG_MAXIMIZED) & 1 : 0;
+    return window ? (window->flags >> WINDOW_MAXIMIZED) & 1 : 0;
 }
 
 void windowSetSize(Window* window, int w, int h)
@@ -202,20 +202,20 @@ void windowMousePos(const Window* window, float* x, float* y)
     if (y) *y = windowMouseYPos(window);
 }
 
-float windowMouseXOff(const Window* window)
+float windowMouseXOffset(const Window* window)
 {
     return window ? window->mouse.dx : 0.0f;
 }
 
-float windowMouseYOff(const Window* window)
+float windowMouseYOffset(const Window* window)
 {
     return window ? window->mouse.dy : 0.0f;
 }
 
-void windowMouseOff(const Window* window, float* x, float* y)
+void windowMouseOffset(const Window* window, float* x, float* y)
 {
-    if (x) *x = windowMouseXOff(window);
-    if (y) *y = windowMouseYOff(window);
+    if (x) *x = windowMouseXOffset(window);
+    if (y) *y = windowMouseYOffset(window);
 }
 
 float windowMouseXScroll(const Window* window)

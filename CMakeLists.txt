@@ -5,9 +5,9 @@ set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 set(INC_DIR ${PROJECT_SOURCE_DIR}/src)
 set(LIB_DIR ${PROJECT_SOURCE_DIR}/deps)
 
-#=====================================================
-#---- Dependencies -----------------------------------
-#=====================================================
+#----------------------------------------------
+# Dependencies
+#----------------------------------------------
 
 # ---- glfw ---------------------------
 option(GLFW_BUILD_DOCS     OFF)
@@ -27,9 +27,9 @@ add_subdirectory(${LIB_DIR}/stb)
 find_package(OpenGL REQUIRED)
 
 
-#=====================================================
-#---- Project ----------------------------------------
-#=====================================================
+#----------------------------------------------
+# Project
+#----------------------------------------------
 
 set(ENGINE_HEADERS
     ${INC_DIR}/core.h
@@ -59,7 +59,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     ${OPENGL_gl_LIBRARY})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-    ${SRC_DIR}
+    ${INC_DIR}
     glfw
     glad
     stb

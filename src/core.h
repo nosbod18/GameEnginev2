@@ -1,32 +1,17 @@
 #ifndef MODULE_CORE_H
 #define MODULE_CORE_H
 
-#include <stdint.h>
-#include <stdbool.h>
-
 #ifndef uchar
     #define uchar  unsigned char
     #define ushort unsigned int
     #define uint   unsigned int
     #define ulong  unsigned long
+    #define bool   unsigned char
 #endif // uchar
 
 //-------------------------------------------------------------
 // Definitions
 //-------------------------------------------------------------
-
-typedef uint8_t  u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-
-typedef int8_t   i8;
-typedef int16_t  i16;
-typedef int32_t  i32;
-typedef int64_t  i64;
-
-typedef float    f32;
-typedef double   f64;
 
 //-----------------------------
 // ~Input
@@ -49,8 +34,8 @@ typedef struct Mouse
     float x, y;
     float dx, dy;
     float scrollX, scrollY;
-    bool hidden;
-    bool disabled;
+    uchar hidden;
+    uchar disabled;
 } Mouse;
 
 //-----------------------------
@@ -73,14 +58,14 @@ typedef struct Window
 //-----------------------------
 // ~Enums
 
-typedef enum
+typedef enum WindowFlags
 {
-    WINFLAG_VSYNC        = 0x01,
-    WINFLAG_MINIMIZED    = 0x02,
-    WINFLAG_MAXIMIZED    = 0x04,
-    WINFLAG_NONMOVABLE   = 0x08,
-    WINFLAG_NONRESIZABLE = 0x10,
-    WINFLAG_STATIC       = WINFLAG_NONMOVABLE | WINFLAG_NONRESIZABLE,
+    WINDOW_VSYNC        = 0x01,
+    WINDOW_MINIMIZED    = 0x02,
+    WINDOW_MAXIMIZED    = 0x04,
+    WINDOW_NONMOVABLE   = 0x08,
+    WINDOW_NONRESIZABLE = 0x10,
+    WINDOW_STATIC       = WINDOW_NONMOVABLE | WINDOW_NONRESIZABLE,
 } WindowFlags;
 
 typedef enum KeyCode
@@ -281,9 +266,9 @@ float   windowMouseXPos(const Window* window);
 float   windowMouseYPos(const Window* window);
 void    windowMousePos(const Window* window, float* x, float* y);
 
-float   windowMouseXOff(const Window* window);
-float   windowMouseYOff(const Window* window);
-void    windowMouseOff(const Window* window, float* x, float* y);
+float   windowMouseXOffset(const Window* window);
+float   windowMouseYOffset(const Window* window);
+void    windowMouseOffset(const Window* window, float* x, float* y);
 
 float   windowMouseXScroll(const Window* window);
 float   windowMouseYScroll(const Window* window);
